@@ -6,7 +6,7 @@ import argparse
 import importlib_resources as resources
 from os import path
 
-from bottle import Bottle, static_file
+from bottle import Bottle, static_file, response
 
 
 app = Bottle()
@@ -17,15 +17,21 @@ def serve_benchmark_output(filename):
     response = static_file(filename, root=app.config["helm.outputpath"])
     response.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
     response.set_header("Expires", "0")
+    response.set_header('Access-Control-Allow-Origin', 'http://localhost:5173')
+    response.set_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+    response.set_header('Access-Control-Allow-Headers', 'Origin, Accept, Content-Type')
     return response
 
-
+@app.get("/models")
+@app.get("/scenarios")
+@app.get("/groups/<group:path>")
+@app.get("/runs")
+@app.get("/runs/<run:path>")
 @app.get("/")
 @app.get("/<filename:path>")
 def serve_static(filename="index.html"):
     response = static_file(filename, root=app.config["helm.staticpath"])
     return response
-
 
 def main():
     global service
@@ -39,7 +45,7 @@ def main():
     # Determine the location of the static directory.
     # This is a hack: it assumes that the static directory has a physical location,
     # which is not always the case (e.g. when using zipimport).
-    resource_path = resources.files("helm.benchmark.static").joinpath("index.html")
+    resource_path = resources.files("helm.benchmark.static_build").joinpath("index.html")
     with resources.as_file(resource_path) as resource_filename:
         static_path = str(resource_filename.parent)
 
